@@ -110,7 +110,7 @@ func (this *AliyunOss) GetName(dstRelativePath string) string {
 	ext := path.Ext(dstRelativePath)
 	objectKey := this.Uuid()
 	if ext != "" {
-		objectKey = objectKey + "." + ext
+		objectKey = objectKey + ext
 	}
 	return objectKey
 }
