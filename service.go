@@ -268,13 +268,15 @@ func (serv *Service) CatchImage(r *http.Request) (listRes *ResFilesInfoWithState
 		err = errors.New("form parse error")
 		return
 	}
-
-	source, _ := r.PostForm[fieldName+"[]"]
-
+	source, _ := r.Form[fieldName+"[]"]
 	filesInfos := make([]*ResFileInfo, 0)
 	for _, imgurl := range source {
 		fileInfo, _ := serv.uploader.SaveRemote(imgurl)
 		filesInfos = append(filesInfos, fileInfo)
+	}
+
+	listRes = &ResFilesInfoWithStates{
+		List: make([]*ResFileInfo, 0),
 	}
 
 	if len(filesInfos) > 0 {

@@ -2,8 +2,12 @@ package storage
 
 import (
 	"bytes"
+	"crypto/rand"
+	"fmt"
 	"io"
 	"os"
+	"path"
+	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
@@ -57,30 +61,33 @@ func (this *AliyunOss) SaveFileFromLocalPath(srcPath string, dstAbsPath, dstRela
 	}
 	defer fi.Close()
 
-	err = this.bucket.PutObject(dstRelativePath, fi)
+	objectKey := this.GetName(dstRelativePath)
+	err = this.bucket.PutObject(objectKey, fi)
 	if err != nil {
 		return "", err
 	}
 
-	return this.GetUrl(dstRelativePath)
+	return this.GetUrl(objectKey)
 }
 
 func (this *AliyunOss) SaveFile(srcFile io.Reader, srcFileSize int64, dstAbsPath, dstRelativePath string) (string, error) {
-	err := this.bucket.PutObject(dstRelativePath, srcFile)
+	objectKey := this.GetName(dstRelativePath)
+	err := this.bucket.PutObject(objectKey, srcFile)
 	if err != nil {
 		return "", err
 	}
 
-	return this.GetUrl(dstRelativePath)
+	return this.GetUrl(objectKey)
 }
 
 func (this *AliyunOss) SaveData(data []byte, dstAbsPath, dstRelativePath string) (string, error) {
-	err := this.bucket.PutObject(dstRelativePath, bytes.NewReader(data))
+	objectKey := this.GetName(dstRelativePath)
+	err := this.bucket.PutObject(objectKey, bytes.NewReader(data))
 	if err != nil {
 		return "", err
 	}
 
-	return this.GetUrl(dstRelativePath)
+	return this.GetUrl(objectKey)
 }
 
 func (this *AliyunOss) GetUrl(objectKey string) (string, error) {
@@ -97,4 +104,23 @@ func (this *AliyunOss) GetUrl(objectKey string) (string, error) {
 	} else {
 		return this.config.Domain + objectKey, nil
 	}
+}
+
+func (this *AliyunOss) GetName(dstRelativePath string) string {
+	ext := path.Ext(dstRelativePath)
+	objectKey := this.Uuid()
+	if ext != "" {
+		objectKey = objectKey + "." + ext
+	}
+	return objectKey
+}
+
+func (this *AliyunOss) Uuid() string {
+	unix32bits := uint32(time.Now().UTC().Unix())
+
+	buff := make([]byte, 12)
+
+	rand.Read(buff)
+
+	return fmt.Sprintf("%x-%x-%x-%x-%x-%x", unix32bits, buff[0:2], buff[2:4], buff[4:6], buff[6:8], buff[8:])
 }
