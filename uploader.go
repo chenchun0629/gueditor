@@ -24,6 +24,8 @@ type ResFileInfo struct {
 	Original string `json:"original"`
 	Type     string `json:"type"`
 	Size     int64  `json:"size"`
+	State    string `json:"state"`
+	Source   string `json:"source"`
 }
 
 type ResFileInfoWithState struct {
@@ -240,6 +242,8 @@ func (up *Uploader) SaveRemote(remoteUrl string) (fileInfo *ResFileInfo, err err
 	fileInfo.Title = filepath.Base(fileAbsPath)
 	fileInfo.Original = fileName
 	fileInfo.URL = fileUrl
+	fileInfo.State = "SUCCESS"
+	fileInfo.Source = remoteUrl
 
 	return
 }
