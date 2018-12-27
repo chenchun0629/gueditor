@@ -5,8 +5,11 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -81,7 +84,15 @@ func (this *AliyunOss) SaveFile(srcFile io.Reader, srcFileSize int64, dstAbsPath
 }
 
 func (this *AliyunOss) SaveData(data []byte, dstAbsPath, dstRelativePath string) (string, error) {
-	objectKey := this.GetName(dstRelativePath)
+	var ext string
+	ct := http.DetectContentType(data)
+	if ct == "application/octet-stream" {
+		ext = filepath.Ext(dstRelativePath)
+	} else {
+		ext = "." + strings.Split(ct, "/")[1]
+	}
+
+	objectKey := this.GetNameWithExt(dstRelativePath, ext)
 	err := this.bucket.PutObject(objectKey, bytes.NewReader(data))
 	if err != nil {
 		return "", err
@@ -95,6 +106,8 @@ func (this *AliyunOss) GetUrl(objectKey string) (string, error) {
 		return "", nil
 	}
 
+	ext := filepath.Ext(objectKey)
+
 	if this.config.IsPrivate {
 		if this.config.Expire > 0 {
 			return this.bucket.SignURL(objectKey, oss.HTTPGet, this.config.Expire)
@@ -102,17 +115,25 @@ func (this *AliyunOss) GetUrl(objectKey string) (string, error) {
 			return this.bucket.SignURL(objectKey, oss.HTTPGet, 604800) // 7天
 		}
 	} else {
-		return this.config.Domain + objectKey, nil
+		if strings.ToLower(ext) == ".webp" {
+			return this.config.Domain + objectKey + "?x-oss-process=image/format,png", nil
+		} else {
+			return this.config.Domain + objectKey, nil
+		}
 	}
 }
 
-func (this *AliyunOss) GetName(dstRelativePath string) string {
-	ext := path.Ext(dstRelativePath)
+func (this *AliyunOss) GetNameWithExt(dstRelativePath, ext string) string {
 	objectKey := this.Uuid()
 	if ext != "" {
 		objectKey = objectKey + ext
 	}
 	return objectKey
+}
+
+func (this *AliyunOss) GetName(dstRelativePath string) string {
+	ext := path.Ext(dstRelativePath)
+	return this.GetNameWithExt(dstRelativePath, ext)
 }
 
 func (this *AliyunOss) Uuid() string {

@@ -187,13 +187,6 @@ func (up *Uploader) SaveRemote(remoteUrl string) (fileInfo *ResFileInfo, err err
 		return
 	}
 
-	// 校验文件类型
-	ext := filepath.Ext(urlObj.Path)
-	err = up.checkType(ext)
-	if err != nil {
-		return
-	}
-
 	fileName := filepath.Base(urlObj.Path)
 	fullName := up.getFullName(fileName)
 	fileAbsPath := up.getFilePath(fullName)
@@ -231,6 +224,19 @@ func (up *Uploader) SaveRemote(remoteUrl string) (fileInfo *ResFileInfo, err err
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		errors.New(common.ERRPR_READ_REMOTE_DATA)
+		return
+	}
+
+	// 校验文件类型
+	var ext string
+	ct := http.DetectContentType(data)
+	if ct == "application/octet-stream" {
+		ext = filepath.Ext(urlObj.Path)
+	} else {
+		ext = "." + strings.Split(ct, "/")[1]
+	}
+	err = up.checkType(ext)
+	if err != nil {
 		return
 	}
 
