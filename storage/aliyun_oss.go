@@ -106,8 +106,6 @@ func (this *AliyunOss) GetUrl(objectKey string) (string, error) {
 		return "", nil
 	}
 
-	ext := filepath.Ext(objectKey)
-
 	if this.config.IsPrivate {
 		if this.config.Expire > 0 {
 			return this.bucket.SignURL(objectKey, oss.HTTPGet, this.config.Expire)
@@ -115,11 +113,7 @@ func (this *AliyunOss) GetUrl(objectKey string) (string, error) {
 			return this.bucket.SignURL(objectKey, oss.HTTPGet, 604800) // 7天
 		}
 	} else {
-		if strings.ToLower(ext) == ".webp" {
-			return this.config.Domain + objectKey + "?x-oss-process=image/format,png", nil
-		} else {
-			return this.config.Domain + objectKey, nil
-		}
+		return this.config.Domain + objectKey, nil
 	}
 }
 
